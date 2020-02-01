@@ -14,16 +14,16 @@ Introduction
 =============================
 
 The objective of this proposal is to provide a way to discern string literals from other array and string types.
-Our proposed solution is to change the type of string literal expressions from `const char(&)[N]` to
-`const char (&&)[N]`.
+Our proposed solution is to change the type of string literal expressions such as `"Hello World"` from
+`const char(&)[N]` to `const char (&&)[N]`.
 
 Impact on the standard
 =============================
 
-This proposal is a language level change. It breaks the API for some esoteric cases but does not break API for
-idiomatic uses of string literals. This proposal does not change C compatibility.
+This proposal is a language level change. It breaks the API for some rare edge cases but does not break API for
+idiomatic uses of string literals. This proposal does not affect C compatibility.
 
-More details are provided in following sections.
+A detailed explanation of the API consequences of this proposal are given later in the paper.
 
 Motivation
 ================
@@ -31,7 +31,7 @@ Motivation
 In high performance, low latency systems we have natural contention between needing to be fast but also
 needing to be able to log information so we can debug and introspect our systems. These goals are always at
 odds, as any logging code added to the fast path will consume CPU cycles that could have been used for
-business logic.
+the primary business logic.
 
 In many domains, running these systems with no introspection at all is not feasable due to the difficulty
 and cost of debugging production issues. Many applications, such as low latency trading strategies in the
@@ -41,21 +41,22 @@ every application uses some kind of logger, even if it's using `std::cout` direc
 language level enhancements to make building high performance loggers safer and easier is an important goal.
 
 Logging fixed width types such as integers and floating point numbers is pretty straightforward. One can
-simply copy them off the hot path and let a background logger serialize them. The difficulty comes in when
+simply copy them off the hot path to a buffer and let a background logger serialize them. The difficulty comes in when
 one has to deal with variable width strings. Some would argue that all logging should be structured and
-never use strings. These approaches have their trade offs and don't always solve every problem.
+never use strings. These approaches have their own trade offs and aren't universally applicable. We will not
+discuss structured logging approaches any more in this paper.
 
 While we could go onto the various approaches of dealing with string data, there is one class of strings
 where we have a very easy way to both get variable width string data and maximum efficiency. Those would be
 native string literals like `"Hello World"`.
 
-String literals are compile time constants and their lifetime matches the lifetime of the entire application.
+String literals are compile time constants with infinite lifetime.
 Because they are `constexpr` there are no initialization or shutdown race conditions with other singleton
-objects. Because of the lifetime guarantee, we never need to copy them and can pass them by reference using
+objects. Because of the lifetime guarantee, we never need to copy them and we can pass them by reference using
 pointers. This of course falls out naturally from the decay behavior inherited from C.
 
 Going back to our logging example, this means that for string literal types the most efficent and convenient
-way to ship them to a logging thread is to just store a pointer. This is clearly more efficient than copying
+way to ship them to a logging thread is to decay and store a pointer. This is clearly more efficient than copying
 the bytes directly for strings of length greater than `sizeof(const char*)`, which is the majority in many
 applications. It also uses less memory, even in many cases where the length of the string is smaller than
 word size, as the structures we would end up storing this data will likely have to align themselves out to
@@ -63,10 +64,10 @@ word or half word size anyway.
 
 Storing a pointer means our storage mechanism can stay in the fixed size domain. This is important because
 dealing with fixed size structures is an order of magnitude simpler than dealing with variable length data.
-Storing variable width data often requires either templates or complex type erasure techniques.
+Storing variable length data often requires either templates or complex type erasure techniques.
 
 So we conclude we would like to optimize string literals by storing pointers instead of copying the actual bytes.
-In order to achieve this, we need to be able to reliable discern string literals from other string types and
+In order to achieve this, we need to be able to reliably discern string literals from other string types and
 character arrays, and herein lies the problem.
 
 
@@ -76,7 +77,7 @@ Design Goals and Scope
 The goal of this paper is simple:
 
 Allow the programmer to capture a string literal expression like "Hello World" so that they may handle it
-differently than other string types or character arrays.
+differently than other string or character array types.
 
 A secondary goal which falls out of the proposed solution is to simplify the rules of C++ by making all
 literal expressions be rvalues.
@@ -99,7 +100,8 @@ std::is_same<float,decltype(1.0f)>::value;
 ```
 
 Presumably, the difference is due to the fact that C arrays cannot be copied, and so in order to make such an
-expression assignable, a reference type had to be used. In C++ pre-11, all we had were lvalue references.
+expression assignable, a reference type had to be used instead of a value. In C++ pre-11, all we had were
+lvalue references.
 
 There is another difference here.
 
@@ -116,7 +118,7 @@ f(1);
 Unlike all other literal types, string literals are lvalues. This could cause confusion, but admittedly since
 string literals are also const, and const lvalue references can also bind to rvalues, it rarely shows up in
 practice. In fact the author after being a C++ developer for nearly 2 decades did not know of this difference
-until investigating the details of this problem.
+until investigating the details of this proposal.
 
 ```
 template <typename T> void f(const T&);
@@ -169,7 +171,7 @@ template <size_t N> void f(const char (&)[N]);
 template <typename T> void f(T*);
 
 void g(const char*);
-void g(const char(&)[N]);
+void g(const char(&)[4]);
 
 // Error ambigous overloads
 f("foo");
@@ -178,7 +180,7 @@ f("foo");
 g("foo");
 ```
 
-So we have really 2 options here, either capture by `const char*` or write a template and capture by
+So we have only 2 viable options here, either capture by `const char*` or write a template and capture by
 `const char(&)[N]`.
 
 Capturing by pointer is obviously too wide. A `const char*` could be anything including something
@@ -240,7 +242,7 @@ void do_file_io1() {
    logger(path);
 }
 
-// No Ok
+// Not Ok
 // Maybe ok on your platform if the implementation stores the string in permanent storage.
 void do_file_io2() {
    const char path[] = "/some/path/to/file";
@@ -248,7 +250,7 @@ void do_file_io2() {
 }
 ```
 
-This is truly the best we have with the current C++ language for writing an overload which captures a string literal.
+This is the best we have with the current C++ language for writing an overload which captures a string literal.
 The solution is clearly lacking.
 
 Proposed Solution
@@ -308,7 +310,7 @@ void do_file_io2() {
 As we can see this solution is not achieving compile time perfection. However, given the fact that actual use
 of `const char (&&)[N]` is meaningless in current code, this is in the author's opinion a suitable compromise
 and clearly better than the status quo. Finally, we gain another benefit in simplifying the language as now all
-literal expressions are truly rvalues.
+literal expressions are rvalues.
 
 Analysis of API breakage
 ========================
@@ -325,8 +327,8 @@ template <size_t N> void f(const char (&)[N]);
 template <size_t N> void f(const char (&&)[N]);
 ```
 
-In our example above, the rvalue overload is preferred and the lvalue overload still works. All old code using
-`const char(&)[N]` to capture literals still works.
+In our example above, the rvalue overload is preferred while the lalue overload is still a viable candidate.
+All old code using `const char(&)[N]` to capture literals still works.
 
 ```
 template <size_t N> void f(const char (&)[N]);
@@ -349,7 +351,7 @@ Alternative Solutions
 Solution 1. Change string literals to be a new template type
 -----------------------------------------------------------
 
-The perfect solution to this problem would be to add a unique templated type to the language, call it `std::basic_string_literal<char,N>`
+We could add a unique templated type to the language, call it `std::basic_string_literal<char,N>`
 and have string literal expression return this type.
 
 ```
@@ -358,21 +360,22 @@ std::is_same<std::basic_string_literal<char,N>,decltype("foo")>::value;
 
 This type would need to contain a lot of compiler "magic" in order to work. Namely it would need to:
 
-* Be an rvalue
+* Be an rvalue reference or a value, making the expression itself an rvalue.
 * Decay to `const char*` pointer
 * Convertable to `const char(&)[N]`
 * Maintain same overload behavior outlined above.
-* Not require header inclusions for every string literal expression
+* Not require standard library header inclusions for every file containing a string literal expression
 
 That is indeed a lot of magic and a lot of unknowns about how such a thing could be specified or even possible.
-It also causes the same API breakage of our proposed solution.
+It also causes the same API breakage as our proposed solution, and perhaps even more as the expression isn't even
+a character array type anymore.
 
-This solution however would be compile time perfect. In that one could write:
+This solution however would solve our primary goal and be compile time perfect. In that one could write:
 ```
 template <typename Char, size_t> void logger(const std::basic_string_literal<Char,N>&)
 ```
 
-And be guaranteed this will only capture string literal expressions and nothing else.
+And be guaranteed this will only bind to string literal expressions and nothing else.
 
 Solution 2. Add a special type which can overload on string literals
 --------------------------------------------------------------------
@@ -395,6 +398,9 @@ void g() {
 }
 ```
 
+To be clear, this is not a binding to `const char (&)[N]`. It is a new and unprecedented mechanism
+for this type to bind to string literal expressions in addition to the existing rules in C++ for overloads.
+
 This would achieve our primary goal of adding the ability to detect string literals with perfect compile time accuracy.
 It also would be a pure addition and not break the API.
 
@@ -406,7 +412,8 @@ If the committee is excited about this approach, we would be willing to change c
 all the alternatives presented this is the one we feel is the most desirable.
 
 In addition with the goal of making all literals rvalues, we could still adopt the proposed solution in this paper of changing
-string literals to `const char (&&)[N]` and simulateously propose the variant of `basic_string_literal` in addition.
+string literals to `const char (&&)[N]` and simulateously propose this variant of `basic_string_literal` in addition to further
+harden the primary goal of this paper.
 
 Solution 3. Don't use native string literals
 --------------------------------------------
@@ -422,14 +429,14 @@ log("Oops I forgot the sv, not this string will be copied and pessimized");
 ```
 
 This has a lot of problems. First, it requires `using namespace std::literals` everywhere which is cumbersome at best and not
-allowed in header files global scope.
+viable at all for global scope in header files.
 
 This solution requires us to remember to write the `sv` suffix on every string literal we pass to our logger. Any large code
-base writing a logger in this way must train their entire org to do this correctly. We can all predict with certainty that this
-will be a constant source of bugs as programmers will as a rule forget to add the `sv` suffix. The `sv` suffix could be enforced
-by adding overloads disable `const char (&)[N]` at compile time, and I would argue anyone going for this approach must do that.
-But then we lose the ability to log character arrays and still have to pay the syntatic overhead of adding this useless suffix
-everywhere just to work around language limitations.
+base using a logger in this way must train their entire org to do this correctly. We can all predict with certainty that this
+will be a constant source of bugs as programmers will, as a rule, forget to add the `sv` suffix. The `sv` suffix could be enforced
+by adding overloads disable `const char (&)[N]` at compile time, and I would argue anyone going for this approach *must* do that.
+But then we lose the ability to log character arrays and still have to pay the syntatic overhead of adding this useless `sv` suffix
+everywhere just to work around language limitations which could be fixed.
 
 The author is vehemently against these types of approaches for the above reasons. We should improve string literals at the
 language level to empower developers to write more efficient and safer libraries.
