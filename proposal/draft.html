@@ -4,7 +4,7 @@
 <li>Document Number: XXXXX</li>
 <li>Date: 2020-01-01</li>
 <li>Programming Language C++</li>
-<li>Reply-to: Matthew Fioravante <a href="&#x6D;&#97;il&#116;&#x6F;:&#x66;&#x6D;a&#x74;&#116;&#x68;&#101;&#119;&#53;&#x38;&#x37;&#x36;&#64;g&#x6D;&#97;&#105;&#x6C;&#46;&#x63;&#111;&#x6D;">&#x66;&#x6D;a&#x74;&#116;&#x68;&#101;&#119;&#53;&#x38;&#x37;&#x36;&#64;g&#x6D;&#97;&#105;&#x6C;&#46;&#x63;&#111;&#x6D;</a></li>
+<li>Reply-to: Matthew Fioravante <a href="&#109;&#x61;&#x69;&#108;&#x74;&#111;:&#x66;&#x6D;&#97;&#x74;&#116;h&#x65;&#x77;&#53;&#56;&#55;&#x36;&#64;&#103;&#109;&#97;&#x69;&#108;&#x2E;&#99;&#111;&#x6D;">&#x66;&#x6D;&#97;&#x74;&#116;h&#x65;&#x77;&#53;&#56;&#55;&#x36;&#64;&#103;&#109;&#97;&#x69;&#108;&#x2E;&#99;&#111;&#x6D;</a></li>
 </ul>
 
 <p>The latest draft, reference header (incomplete), and links to past discussions on github:</p>
@@ -48,7 +48,8 @@ discuss structured logging approaches any more in this paper.</p>
 
 <p>While we could go onto the various approaches of dealing with string data, there is one class of strings
 where we have a very easy way to both get variable width string data and maximum efficiency. Those would be
-native string literals like <code>"Hello World"</code>.</p>
+native string literals like <code>"Hello World"</code>. String literals are very common in logging statements, and will
+be even moreso with the addition of [<a href="#fmtlib">fmtlib</a>] to the standard in C++20 as <code>std::format</code>.</p>
 
 <p>String literals are compile time constants with infinite lifetime.
 Because they are <code>constexpr</code> there are no initialization or shutdown race conditions with other singleton
@@ -435,3 +436,7 @@ language level to empower developers to write more efficient and safer libraries
 <h1>Acknowledgments</h1>
 
 <h1>References</h1>
+
+<ul>
+<li><a name="fmtlib"></a>[fmtlib] *GitHub: fmtlib/fmt A modern formatting library Available online at <a href="https://github.com/fmtlib/fmt">https://github.com/fmtlib/fmt</a></li>
+</ul>

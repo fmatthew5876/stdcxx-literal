@@ -48,7 +48,8 @@ discuss structured logging approaches any more in this paper.
 
 While we could go onto the various approaches of dealing with string data, there is one class of strings
 where we have a very easy way to both get variable width string data and maximum efficiency. Those would be
-native string literals like `"Hello World"`.
+native string literals like `"Hello World"`. String literals are very common in logging statements, and will
+be even moreso with the addition of \[[fmtlib](#fmtlib)\] to the standard in C++20 as `std::format`.
 
 String literals are compile time constants with infinite lifetime.
 Because they are `constexpr` there are no initialization or shutdown race conditions with other singleton
@@ -447,3 +448,4 @@ Acknowledgments
 References
 ==================
 
+* <a name="fmtlib"></a>[fmtlib] GitHub: fmtlib/fmt A modern formatting library Available online at <https://github.com/fmtlib/fmt>
