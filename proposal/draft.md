@@ -49,7 +49,7 @@ discuss structured logging approaches any more in this paper.
 While we could go onto the various approaches of dealing with string data, there is one class of strings
 where we have a very easy way to both get variable width string data and maximum efficiency. Those would be
 native string literals like `"Hello World"`. String literals are very common in logging statements, and will
-be even moreso with the addition of \[[fmtlib](#fmtlib)\] to the standard in C++20 as `std::format`.
+be even moreso with the addition of \[[Text Formatting](#fmtlib)\] to the standard in C++20.
 
 String literals are compile time constants with infinite lifetime.
 Because they are `constexpr` there are no initialization or shutdown race conditions with other singleton
@@ -439,7 +439,7 @@ by adding overloads disable `const char (&)[N]` at compile time, and I would arg
 But then we lose the ability to log character arrays and still have to pay the syntatic overhead of adding this useless `sv` suffix
 everywhere just to work around language limitations which could be fixed.
 
-The author is vehemently against these types of approaches for the above reasons. We should improve string literals at the
+We are not in favor of these types of approaches for the above reasons. We should improve string literals at the
 language level to empower developers to write more efficient and safer libraries.
 
 Acknowledgments
@@ -448,4 +448,4 @@ Acknowledgments
 References
 ==================
 
-* <a name="fmtlib"></a>[fmtlib] GitHub: fmtlib/fmt A modern formatting library Available online at <https://github.com/fmtlib/fmt>
+* <a name="fmtlib"></a>[Text Formatting] P0645R1: Text Formatting Available online at <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0645r1.html>

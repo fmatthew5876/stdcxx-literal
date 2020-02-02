@@ -4,7 +4,7 @@
 <li>Document Number: XXXXX</li>
 <li>Date: 2020-01-01</li>
 <li>Programming Language C++</li>
-<li>Reply-to: Matthew Fioravante <a href="&#109;&#x61;&#x69;&#108;&#x74;&#111;:&#x66;&#x6D;&#97;&#x74;&#116;h&#x65;&#x77;&#53;&#56;&#55;&#x36;&#64;&#103;&#109;&#97;&#x69;&#108;&#x2E;&#99;&#111;&#x6D;">&#x66;&#x6D;&#97;&#x74;&#116;h&#x65;&#x77;&#53;&#56;&#55;&#x36;&#64;&#103;&#109;&#97;&#x69;&#108;&#x2E;&#99;&#111;&#x6D;</a></li>
+<li>Reply-to: Matthew Fioravante <a href="&#x6D;&#x61;&#105;&#x6C;&#116;o:&#x66;&#109;a&#x74;&#x74;h&#101;&#119;&#x35;&#56;7&#x36;&#64;&#103;m&#x61;&#105;&#108;&#46;co&#109;">&#x66;&#109;a&#x74;&#x74;h&#101;&#119;&#x35;&#56;7&#x36;&#64;&#103;m&#x61;&#105;&#108;&#46;co&#109;</a></li>
 </ul>
 
 <p>The latest draft, reference header (incomplete), and links to past discussions on github:</p>
@@ -49,7 +49,7 @@ discuss structured logging approaches any more in this paper.</p>
 <p>While we could go onto the various approaches of dealing with string data, there is one class of strings
 where we have a very easy way to both get variable width string data and maximum efficiency. Those would be
 native string literals like <code>"Hello World"</code>. String literals are very common in logging statements, and will
-be even moreso with the addition of [<a href="#fmtlib">fmtlib</a>] to the standard in C++20 as <code>std::format</code>.</p>
+be even moreso with the addition of [<a href="#fmtlib">Text Formatting</a>] to the standard in C++20.</p>
 
 <p>String literals are compile time constants with infinite lifetime.
 Because they are <code>constexpr</code> there are no initialization or shutdown race conditions with other singleton
@@ -430,7 +430,7 @@ by adding overloads disable <code>const char (&amp;)[N]</code> at compile time, 
 But then we lose the ability to log character arrays and still have to pay the syntatic overhead of adding this useless <code>sv</code> suffix
 everywhere just to work around language limitations which could be fixed.</p>
 
-<p>The author is vehemently against these types of approaches for the above reasons. We should improve string literals at the
+<p>We are not in favor of these types of approaches for the above reasons. We should improve string literals at the
 language level to empower developers to write more efficient and safer libraries.</p>
 
 <h1>Acknowledgments</h1>
@@ -438,5 +438,5 @@ language level to empower developers to write more efficient and safer libraries
 <h1>References</h1>
 
 <ul>
-<li><a name="fmtlib"></a>[fmtlib] *GitHub: fmtlib/fmt A modern formatting library Available online at <a href="https://github.com/fmtlib/fmt">https://github.com/fmtlib/fmt</a></li>
+<li><a name="fmtlib"></a>[Text Formatting] P0645R1: Text Formatting Available online at <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0645r1.html">http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0645r1.html</a></li>
 </ul>
